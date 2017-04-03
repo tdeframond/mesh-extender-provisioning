@@ -1,0 +1,74 @@
+#!/usr/bin/expect
+#Expect script installing an openWrt image on the Serval Mesh Extender
+
+set timeout -1
+log_user 0
+
+spawn cu -l /dev/cu.usbserial -s 115200
+
+expect {
+	"Connected." 
+	{
+	 	puts "\n##############################################\n# MESH EXTENDER FIRMWARE UPDATER\n#\n# 1/9 > Please, boot or reboot the PCB" 
+	}
+}
+
+expect {
+	"Hit any key" 
+	{ 
+		send "\r" 
+		puts "# 2/9 > Autoboot well interrupted" 
+	}
+}
+
+expect {
+	"uboot>" 
+	{ 
+		send "httpd\r" 
+		puts "# 3/9 > Server HTTP well started" 
+	}
+}
+
+expect {
+	"HTTP server is ready!"
+	{ 
+		puts "# 4/9 > Uploading the image..." 
+		system curl --silent -o /dev/null -F 'firmware=@./openwrt-ar71xx-generic-gl-ar150-squashfs-sysupgrade.bin' -F 'filename=\$openwrt-ar71xx-generic-gl-ar150-squashfs-sysupgrade.bin' http://192.168.1.1/ 
+	}
+}
+
+expect {
+	"upload is done!"
+	{ 
+		puts "# 5/9 > Upload successful\n# 6/9 > Upgrading the firmware... DO NOT POWER OFF " 
+	}
+}
+
+expect {
+	"done!"
+	{ 
+		puts "# 7/9 > HTTP upgrade is done! First reboot in progress..." 
+	}
+}
+
+expect {
+	"after the end marker..."
+	{ 
+		puts "# 8/9 > Please reboot the node one last time in order to finish the installing process" 
+	}
+}
+
+expect {
+	"Starting kernel"
+	{ 
+		puts "# 9/9 > Second and last reboot. Almost done..." 
+	}
+}
+
+expect {
+	"after the end marker..." 
+	{ 
+		send "\r" 
+		puts "#\n# FIRMWARE SUCCESSFULLY UPDATED, ENJOY!\n##############################################\n" 
+	}
+}
